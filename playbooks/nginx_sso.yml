@@ -1,0 +1,20 @@
+---
+-
+  name: "Create vhost for sso"
+  hosts: localhost
+  tasks:
+    - name: "Include global variables"
+      include_vars: global_variables.yml
+    - name: "Add default nginx configurtion"
+      template:
+        src: ../files/nginx_sso.j2
+        dest: /etc/nginx/sites-available/sso
+    - name: "Enable default"
+      file:
+        src: /etc/nginx/sites-available/sso
+        dest: /etc/nginx/sites-enabled/sso
+        state: link
+    - name: "Load vhsot for default"
+      service:
+        name: nginx
+        state: reloaded

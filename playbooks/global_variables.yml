@@ -1,3 +1,6 @@
 install_path: /opt/nlv/authentik
 port_http: 9000
 port_https: 9443
+hostname: sso.srcradostomsk.ru
+ssl_domains_list: sso.srcradostomsk.ru
+cert_admin_email: Leon.V.Nikitin@pravmail.ru
