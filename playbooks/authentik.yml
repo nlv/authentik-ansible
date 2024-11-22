@@ -1,0 +1,69 @@
+---
+- 
+  name: Устанвка authentik
+  hosts: localhost
+  tasks:
+    - name: Включение переменных
+      include_vars: global_variables.yml
+    # - name: добавление пользователя в docker группу (нужно?)
+    - name: Установка docker.io
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+    - name: Установка docker-compose-v2
+      ansible.builtin.apt:
+        name: docker-compose-v2
+        state: present
+
+    - name: Создание папки для развертывания docker-composer скрипта
+      ansible.builtin.file:
+        path: "{{ install_path }}"
+        state: directory
+    - name: Добавление скрипта docker-compose
+      copy:
+        src: ../files/docker-compose.yml
+        dest: "{{ install_path }}/docker-compose.yml"
+  
+    - name: Генерируем пароль для Postgres
+      ansible.builtin.lineinfile:
+        path: "{{ install_path }}/.env"
+        regexp: '^PG_PASS=(.*)' 
+        line: "PG_PASS={{ lookup('password', install_path+'/pg_pass length=36 chars=ascii_letters') }}"
+        state: present
+        create: true
+        mode: u=rw,g-rwx,o-rwx
+    - name: Генерируем секретный ключ
+      ansible.builtin.lineinfile:
+        path: "{{ install_path }}/.env"
+        regexp: '^AUTHENTIK_SECRET_KEY=(.*)' 
+        line: "AUTHENTIK_SECRET_KEY={{ lookup('password', install_path+'/secret_key length=60 chars=ascii_letters') }}"
+        state: present
+        create: true
+        mode: u=rw,g-rwx,o-rwx
+    # - name: Добавляем включение опции отправки отчета ошибок  
+    #   ansible.builtin.lineinfile:
+    #     path: "{{ install_path }}/.env"
+    #     regexp: '^AUTHENTIK_ERROR_REPORTING__ENABLED=(.*)' 
+    #     line: "AUTHENTIK_ERROR_REPORTING__ENABLED=true"
+    #     state: present
+    #     create: true
+
+    - name: Добавляем номер порта HTTP  
+      ansible.builtin.lineinfile:
+        path: "{{ install_path }}/.env"
+        regexp: '^COMPOSE_PORT_HTTP=(.*)' 
+        line: "COMPOSE_PORT_HTTP={{port_http}}"
+        state: present
+        create: true
+    - name: Добавляем номер порта HTTPS 
+      ansible.builtin.lineinfile:
+        path: "{{ install_path }}/.env"
+        regexp: '^COMPOSE_PORT_HTTPS=(.*)' 
+        line: "COMPOSE_PORT_HTTPS={{port_https}}"
+        state: present
+        create: true
+
+    - name: Запускаем сервис
+      community.docker.docker_compose_v2:
+        project_src: "{{ install_path }}"
+        state: present
